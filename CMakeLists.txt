@@ -139,6 +139,8 @@ SET (REACTPHYSICS3D_SOURCES
     "src/mathematics/Vector3.cpp"
     "src/memory/MemoryAllocator.h"
     "src/memory/MemoryAllocator.cpp"
+    "src/common/radixsort.h"
+    "src/common/radixsort.cpp"
 )
 
 # Create the library
