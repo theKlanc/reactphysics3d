@@ -23,87 +23,54 @@
 *                                                                               *
 ********************************************************************************/
 
-#ifndef REACTPHYSICS3D_FLUID_H
-#define REACTPHYSICS3D_FLUID_H
-
 // Libraries
-#include "../mathematics/Vector3.h"
-#include <vector>
+#include "radixsort.h"
 
-/// Namespace ReactPhysics3D
-namespace reactphysics3d {
+using namespace reactphysics3d;
 
-// Structure FluidParticle
-/**
- * This structure represents particle of a fluid.
- */
-struct FluidParticle {
+// Function that sorts an array of integer using the radix sort algorithm.
+void reactphysics3d::radixSort(uint32 array[], uint32 nbElements) {
 
-    // -------------------- Attributes -------------------- //
+    // Find the maximum element in the array
+    uint32 maxElement = array[0];
+    for (uint32 i = 1; i < nbElements; i++) {
+        if (array[i] > maxElement) {
+            maxElement = array[i];
+        }
+    }
 
-    /// Position of the particle
-    Vector3 position;
-
-    /// Velocity of the particle
-    Vector3 velocity;
-
-};
-
-// Class Fluid
-/**
- * This class represents a fluid made of several particles.
- */
-class Fluid {
-
-    private:
-
-        // -------------------- Attributes -------------------- //
-
-        /// World-space fluid dimensions in the x, y, z directions
-        Vector3 mDimension;
-
-        /// Center position of the fluid in world-space coordinates
-        Vector3 mPosition;
-
-        /// Number of partices in the fluid
-        uint32 mNbParticles;
-
-        /// True if the simulation of this fluid is enabled, false otherwise
-        bool mIsActive;
-
-        /// Array with all the partices of the fluid
-        // TODO : Do not use a std::vector here but replace with C-array using rp3d memmory
-        //        allocator
-        std::vector<FluidParticle> mParticles;
-
-        /// Mass of each particle in the fluid
-        // TODO : Initialize this value
-        decimal mMassParticle;
-
-    public:
-
-        // -------------------- Methods -------------------- //
-
-        /// Constructor
-        Fluid(Vector3 position, Vector3 dimension);
-
-        /// Destructor
-        ~Fluid();
-
-        /// Return the number of particles in the fluid
-        uint32 getNbParticles() const;
-
-        // -------------------- Friendship -------------------- //
-
-        friend class FluidSolver;
-
-};
-
-// Return the number of particles in the fluid
-inline uint32 Fluid::getNbParticles() const {
-    return mNbParticles;
+    // Perform a counting sort pass for every digit
+    for (uint32 exp=1; (maxElement / exp) > 0; exp *= 10) {
+        countingSort(array, nbElements, exp);
+    }
 }
 
-}
+// Function that sorts an array of integers according to the digit represented by "exp"
+void reactphysics3d::countingSort(uint32 array[], uint32 nbElements, uint32 exp) {
+    uint32* outputArray = new uint32[nbElements];
+    uint32 count[10] = {0};
+    int i;
 
-#endif
+    // Compute the histogram of the digit occurences in count[]
+    for (i=0; i<nbElements; i++) {
+        count[(array[i]/exp) % 10]++;
+    }
+
+    // Change count[] so that it contains the actual position of the digits in the output array
+    for (i=1; i<10; i++) {
+        count[i] += count[i - 1];
+    }
+
+    // Fill-in the output array
+    for (i=nbElements-1; i >= 0; i--) {
+        outputArray[count[(array[i]/exp) % 10] - 1] = array[i];
+        count[(array[i]/exp) % 10]--;
+    }
+
+    // Copy the output array into the input array
+    for (i=0; i<nbElements; i++) {
+        array[i] = outputArray[i];
+    }
+
+    delete[] outputArray;
+}

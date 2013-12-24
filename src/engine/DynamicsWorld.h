@@ -32,6 +32,7 @@
 #include "ContactSolver.h"
 #include "ConstraintSolver.h"
 #include "../body/RigidBody.h"
+#include "../fluid/Fluid.h"
 #include "Timer.h"
 #include "Island.h"
 #include "../configuration.h"
@@ -78,6 +79,9 @@ class DynamicsWorld : public CollisionWorld {
 
         /// All the joints of the world
         std::set<Joint*> mJoints;
+
+        /// All the fluids of the world
+        std::set<Fluid*> mFluids;
 
         /// Gravity vector of the world
         Vector3 mGravity;

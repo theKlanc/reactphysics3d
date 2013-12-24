@@ -47,6 +47,7 @@ namespace reactphysics3d {
 // ------------------- Type definitions ------------------- //
 
 typedef unsigned int uint;
+typedef unsigned int uint32;
 typedef long unsigned int luint;
 typedef luint bodyindex;
 typedef std::pair<bodyindex, bodyindex> bodyindexpair;

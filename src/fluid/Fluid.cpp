@@ -22,3 +22,20 @@
 * 3. This notice may not be removed or altered from any source distribution.    *
 *                                                                               *
 ********************************************************************************/
+
+
+// Libraries
+#include "Fluid.h"
+
+using namespace reactphysics3d;
+
+// Constructor
+Fluid::Fluid(Vector3 position, Vector3 dimension)
+      : mPosition(position), mDimension(dimension), mNbParticles(0), mIsActive(true) {
+
+}
+
+// Destructor
+Fluid::~Fluid() {
+
+}
