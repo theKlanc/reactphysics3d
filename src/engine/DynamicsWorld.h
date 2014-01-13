@@ -32,7 +32,8 @@
 #include "ContactSolver.h"
 #include "ConstraintSolver.h"
 #include "../body/RigidBody.h"
-#include "../fluid/Fluid.h"
+#include "../fluid/ParticleFluid.h"
+#include "../fluid/FluidSolver.h"
 #include "Timer.h"
 #include "Island.h"
 #include "../configuration.h"
@@ -61,6 +62,9 @@ class DynamicsWorld : public CollisionWorld {
         /// Constraint solver
         ConstraintSolver mConstraintSolver;
 
+        /// Fluid solver
+        FluidSolver mFluidSolver;
+
         /// Number of iterations for the velocity solver of the Sequential Impulses technique
         uint mNbVelocitySolverIterations;
 
@@ -81,12 +85,12 @@ class DynamicsWorld : public CollisionWorld {
         std::set<Joint*> mJoints;
 
         /// All the fluids of the world
-        std::set<Fluid*> mFluids;
+        std::set<ParticleFluid*> mFluids;
 
-        /// Gravity vector of the world
+        /// Gravity acceleration vector of the world (in meters/seconds^2)
         Vector3 mGravity;
 
-        /// True if the gravity force is on
+        /// True if the gravity force is enabled
         bool mIsGravityEnabled;
 
         /// Array of constrained linear velocities (state of the linear velocities
@@ -246,6 +250,12 @@ class DynamicsWorld : public CollisionWorld {
         /// Destroy a joint
         void destroyJoint(Joint* joint);
 
+        // Create a fluid made of particles in the world
+        ParticleFluid* createParticleFluid(const ParticleFluidInfo& particleFluidInfo);
+
+        // Destroy a particle fluid
+        void destroyParticleFluid(ParticleFluid* fluid);
+
         /// Add the joint to the list of joints of the two bodies involved in the joint
         void addJointToBody(Joint* joint);
 
@@ -259,6 +269,9 @@ class DynamicsWorld : public CollisionWorld {
 
         /// Return the gravity vector of the world
         Vector3 getGravity() const;
+
+        /// Set the gravity of the world
+        void setGravity(const Vector3& gravity);
 
         /// Return if the gravity is on
         bool isGravityEnabled() const;
@@ -401,6 +414,11 @@ inline void DynamicsWorld::updateOverlappingPair(const BroadPhasePair* pair) {
 // Return the gravity vector of the world
 inline Vector3 DynamicsWorld::getGravity() const {
     return mGravity;
+}
+
+// Set the gravity of the world
+inline void DynamicsWorld::setGravity(const Vector3& gravity) {
+    mGravity = gravity;
 }
 
 // Return if the gravity is enaled

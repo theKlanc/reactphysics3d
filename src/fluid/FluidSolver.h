@@ -27,7 +27,8 @@
 #define REACTPHYSICS3D_FLUID_SOLVER_H
 
 // Libraries
-#include "Fluid.h"
+#include "ParticleFluid.h"
+#include "../configuration.h"
 #include <set>
 #include <map>
 #include <cassert>
@@ -56,6 +57,8 @@ struct BlockParticles {
     }
 
 };
+
+// TODO : Add more information about the technique used for the SPH simulation (papers, ...)
 
 // Class FluidSolver
 /**
@@ -86,10 +89,13 @@ class FluidSolver {
         /// Factor for the Poly6 smoothing kernel
         static const decimal POLY6_FACTOR;
 
+        /// Factor for the Spiky gradient kernel
+        static const decimal SPIKY_FACTOR;
+
         // -------------------- Attributes -------------------- //
 
         /// Reference to the set of all fluids of the world
-        std::set<Fluid*> mFluids;
+        std::set<ParticleFluid*> mFluids;
 
         /// Map the z-index of a particle with its index in the fluid
         std::map<uint32, uint32> mMapZIndexToParticleIndex;
@@ -106,11 +112,18 @@ class FluidSolver {
         /// Number of blocks
         uint32 mNbBlocks;
 
+        /// Reference to the world gravity vector
+        Vector3& mGravity;
+
+        /// Reference to the time step of the simulation
+        // TODO : Check if we have to use a independent time step for the fluid simulation (check other engines)
+        // TODO : Change this timestep if the user changes the timestep of the DynamicsWorld
+        decimal mTimestep;
 
         // -------------------- Methods -------------------- //
 
         /// Compute the z-index of the particles and sort them according to this z-index
-        void computeZIndexAndSortParticles(Fluid* fluid);
+        void computeZIndexAndSortParticles(ParticleFluid* fluid);
 
         /// Compute the linear z-index coordinate given a 3D grid coordinate
         uint32 computeZIndex(uint32 x, uint32 y, uint32 z) const;
@@ -119,21 +132,32 @@ class FluidSolver {
         uint32 expandBits(uint32 x) const;
 
         /// Compute the particles blocks on the grid
-        void computeBlocks(Fluid *fluid);
+        void computeBlocks(ParticleFluid *fluid);
 
         /// Compute the density at the particles locations
-        void computeDensity(Fluid* fluid);
+        void computeDensity(ParticleFluid* fluid);
+
+        /// Compute the forces on the particles and update their positions
+        void computeForcesAndUpdatePosition(ParticleFluid* fluid);
 
         /// Smoothing kernel Poly6 for the SPH simulation
         decimal kernelPoly6(decimal distanceSquare);
 
+        /// Gradient of the Spiky kernel
+        Vector3 gradientKernelSpiky(const Vector3& r, decimal distance);
+
+        /// Laplacian of the viscosity kernel
+        decimal laplacianKernelViscosity(decimal distance);
+
+        // TODO : Delete this
+        void computeCollisionDetection(ParticleFluid* fluid);
 
     public:
 
         // -------------------- Methods -------------------- //
 
         /// Constructor
-        FluidSolver(std::set<Fluid*>& fluids);
+        FluidSolver(std::set<ParticleFluid*>& fluids, Vector3& gravity, decimal& timestep);
 
         /// Destructor
         ~FluidSolver();
@@ -165,9 +189,23 @@ inline uint32 FluidSolver::expandBits(uint32 x) const {
 
 // Smoothing kernel Poly6 for the SPH simulation
 inline decimal FluidSolver::kernelPoly6(decimal distanceSquare) {
-    decimal value = SPH_SUPPORT_RADIUS_SQUARE - distanceSquare;
+    const decimal value = SPH_SUPPORT_RADIUS_SQUARE - distanceSquare;
     assert(value >= decimal(0.0));
     return POLY6_FACTOR * value * value * value;
+}
+
+// Gradient of the Spiky kernel
+inline Vector3 FluidSolver::gradientKernelSpiky(const Vector3& r, decimal distance) {
+    const decimal value = SPH_SUPPORT_RADIUS - distance;
+    assert(value >= decimal(0.0));
+    if (distance < MACHINE_EPSILON) return Vector3(0, 0, 0);
+    return -r * SPIKY_FACTOR / distance * value * value;
+}
+
+// Laplacian of the viscosity kernel
+inline decimal FluidSolver::laplacianKernelViscosity(decimal distance) {
+    assert(SPH_SUPPORT_RADIUS - distance >= decimal(0.0));
+    return SPIKY_FACTOR * (SPH_SUPPORT_RADIUS - distance);
 }
 
 }

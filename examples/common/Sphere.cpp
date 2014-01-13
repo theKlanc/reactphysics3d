@@ -61,6 +61,22 @@ Sphere::Sphere(float radius, const openglframework::Vector3 &position,
     mRigidBody = dynamicsWorld->createRigidBody(transform, mass, collisionShape);
 }
 
+// Constructor
+Sphere::Sphere(float radius) : mRadius(radius), mRigidBody(NULL) {
+
+    // Load the mesh from a file
+    openglframework::MeshReaderWriter::loadMeshFromFile("meshes/sphere.obj", *this);
+
+    // Calculate the normals of the mesh
+    calculateNormals();
+
+    // Compute the scaling matrix
+    mScalingMatrix = openglframework::Matrix4(mRadius, 0, 0, 0,
+                                              0, mRadius, 0, 0,
+                                              0, 0, mRadius, 0,
+                                              0, 0, 0, 1);
+}
+
 // Destructor
 Sphere::~Sphere() {
 
@@ -115,6 +131,8 @@ void Sphere::render(openglframework::Shader& shader,
 
 // Update the transform matrix of the sphere
 void Sphere::updateTransform() {
+
+    assert(mRigidBody != NULL);
 
     // Get the interpolated transform of the rigid body
     rp3d::Transform transform = mRigidBody->getInterpolatedTransform();

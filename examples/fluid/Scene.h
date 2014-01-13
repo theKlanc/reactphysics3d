@@ -23,59 +23,107 @@
 *                                                                               *
 ********************************************************************************/
 
-#ifndef SPHERE_H
-#define SPHERE_H
+#ifndef SCENE_H
+#define SCENE_H
 
 // Libraries
 #include "openglframework.h"
 #include "reactphysics3d.h"
+#include "Box.h"
+#include "Sphere.h"
+#include "Viewer.h"
 
-// Class Sphere
-class Sphere : public openglframework::Mesh {
+// Constants
+const float PARTICLE_SPHERE_RADIUS = 0.05;                 // Particle sphere radius
+const openglframework::Vector3 FLOOR_SIZE(50, 0.5f, 50);   // Floor dimensions in meters
+const float FLOOR_MASS = 100.0f;                           // Floor mass in kilograms
+
+// Class Scene
+class Scene {
 
     private :
 
         // -------------------- Attributes -------------------- //
 
-        /// Radius of the sphere
-        float mRadius;
+        /// Pointer to the viewer
+        Viewer* mViewer;
 
-        /// Rigid body used to simulate the dynamics of the sphere
-        rp3d::RigidBody* mRigidBody;
+        /// Light 0
+        openglframework::Light mLight0;
 
-        /// Scaling matrix (applied to a sphere to obtain the correct sphere dimensions)
-        openglframework::Matrix4 mScalingMatrix;
+        /// Phong shader
+        openglframework::Shader mPhongShader;
+
+        /// Particle fluid
+        rp3d::ParticleFluid* mFluid;
+
+        /// Box for the floor
+        Box* mFloor;
+
+        /// Sphere to render a particle
+        Sphere* mSphere;
+
+        /// Dynamics world used for the physics simulation
+        rp3d::DynamicsWorld* mDynamicsWorld;
+
+        /// True if the physics simulation is running
+        bool mIsRunning;
 
         // -------------------- Methods -------------------- //
 
-    public :
+        /// Render the fluid
+        void renderFluid(openglframework::Shader &shader,
+                         const openglframework::Matrix4 &worldToCameraMatrix);
+
+        /// Create the particle fluid
+        void createFluid();
+
+    public:
 
         // -------------------- Methods -------------------- //
 
         /// Constructor
-        Sphere(float radius, const openglframework::Vector3& position,
-               float mass, rp3d::DynamicsWorld* dynamicsWorld);
-
-        /// Constructor
-        Sphere(float radius);
+        Scene(Viewer* viewer);
 
         /// Destructor
-        ~Sphere();
+        ~Scene();
 
-        /// Return a pointer to the rigid body of the sphere
-        rp3d::RigidBody* getRigidBody();
+        /// Take a step for the simulation
+        void simulate();
 
-        /// Update the transform matrix of the sphere
-        void updateTransform();
+        /// Stop the simulation
+        void stopSimulation();
 
-        /// Render the sphere at the correct position and with the correct orientation
-        void render(openglframework::Shader& shader,
-                    const openglframework::Matrix4& worldToCameraMatrix);
+        /// Start the simulation
+        void startSimulation();
+
+        /// Pause or continue simulation
+        void pauseContinueSimulation();
+
+        /// Render the scene
+        void render();
 };
 
-// Return a pointer to the rigid body of the sphere
-inline rp3d::RigidBody* Sphere::getRigidBody() {
-    return mRigidBody;
+// Stop the simulation
+inline void Scene::stopSimulation() {
+    mDynamicsWorld->stop();
+    mIsRunning = false;
+}
+
+// Start the simulation
+inline void Scene::startSimulation() {
+    mDynamicsWorld->start();
+    mIsRunning = true;
+}
+
+// Pause or continue simulation
+inline void Scene::pauseContinueSimulation() {
+    if (mIsRunning) {
+        stopSimulation();
+    }
+    else {
+        startSimulation();
+    }
 }
 
 #endif

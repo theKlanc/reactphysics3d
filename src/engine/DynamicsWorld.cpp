@@ -41,6 +41,7 @@ DynamicsWorld::DynamicsWorld(const Vector3 &gravity, decimal timeStep = DEFAULT_
                 mContactSolver(mMapBodyToConstrainedVelocityIndex),
                 mConstraintSolver(mConstrainedPositions, mConstrainedOrientations,
                                   mMapBodyToConstrainedVelocityIndex),
+                mFluidSolver(mFluids, mGravity, timeStep),
                 mNbVelocitySolverIterations(DEFAULT_VELOCITY_SOLVER_NB_ITERATIONS),
                 mNbPositionSolverIterations(DEFAULT_POSITION_SOLVER_NB_ITERATIONS),
                 mIsSleepingEnabled(SPLEEPING_ENABLED), mSplitLinearVelocities(NULL),
@@ -136,6 +137,9 @@ void DynamicsWorld::update() {
 
         // Solve the contacts and constraints
         solveContactsAndConstraints();
+
+        // Fluid simulation
+        mFluidSolver.solve();
 
         // Integrate the position and orientation of each body
         integrateRigidBodiesPositions();
@@ -636,6 +640,32 @@ void DynamicsWorld::destroyJoint(Joint* joint) {
 
     // Release the allocated memory
     mMemoryAllocator.release(joint, nbBytes);
+}
+
+// Create a fluid made of particles in the world
+ParticleFluid* DynamicsWorld::createParticleFluid(const ParticleFluidInfo& particleFluidInfo) {
+
+    // Create the particle fluid
+    void* allocatedMemory = mMemoryAllocator.allocate(sizeof(ParticleFluid));
+    ParticleFluid* fluid = new (allocatedMemory) ParticleFluid(particleFluidInfo);
+
+    // Add the fluid into the world
+    mFluids.insert(fluid);
+}
+
+// Destroy a particle fluid
+void DynamicsWorld::destroyParticleFluid(ParticleFluid* fluid) {
+
+    assert(fluid != NULL);
+
+    // Remove the fluid from the world
+    mFluids.erase(fluid);
+
+    // Call the destructor of the particle fluid
+    fluid->ParticleFluid::~ParticleFluid();
+
+    // Release the allocated memory
+    mMemoryAllocator.release(fluid, sizeof(ParticleFluid));
 }
 
 // Add the joint to the list of joints of the two bodies involved in the joint

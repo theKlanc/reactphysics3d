@@ -25,17 +25,45 @@
 
 
 // Libraries
-#include "Fluid.h"
+#include "ParticleFluid.h"
+#include "../engine/DynamicsWorld.h"
 
 using namespace reactphysics3d;
 
+/// Initialization of static variables
+const decimal ParticleFluid::DEFAULT_PARTICLE_MASS = decimal(0.02);
+const decimal ParticleFluid::DEFAULT_FLUID_REST_DENSITY = decimal(998.29);
+const decimal ParticleFluid::DEFAULT_GAS_STIFFNESS = decimal(3.0);
+const decimal ParticleFluid::DEFAULT_VISCOSITY = decimal(3.5);
+
 // Constructor
-Fluid::Fluid(Vector3 position, Vector3 dimension)
-      : mPosition(position), mDimension(dimension), mNbParticles(0), mIsActive(true) {
+ParticleFluid::ParticleFluid(const ParticleFluidInfo& particleFluidInfo)
+      : mPosition(particleFluidInfo.position), mDimension(particleFluidInfo.dimension),
+        mNbParticles(0), mIsActive(true), mMassParticle(DEFAULT_PARTICLE_MASS),
+        mRestDensity(DEFAULT_FLUID_REST_DENSITY), mGasStiffness(DEFAULT_GAS_STIFFNESS),
+        mViscosity(DEFAULT_VISCOSITY), mIsGravityEnabled(true), mIsNotSimulatedYet(true) {
 
 }
 
 // Destructor
-Fluid::~Fluid() {
+ParticleFluid::~ParticleFluid() {
 
+}
+
+// Create and add a new particle into the fluid
+void ParticleFluid::createParticle(const Vector3& position, const Vector3& velocity) {
+
+    // Create a new particle
+    FluidParticle particle(position, velocity);
+
+    // Add the particle into the fluid
+    mParticles.push_back(particle);
+
+    mNbParticles++;
+}
+
+// Remove all the particles of the fluid
+void ParticleFluid::removeAllParticles() {
+    mParticles.clear();
+    mNbParticles = 0;
 }

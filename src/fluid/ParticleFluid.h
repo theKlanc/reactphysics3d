@@ -33,6 +33,8 @@
 /// Namespace ReactPhysics3D
 namespace reactphysics3d {
 
+// TODO : Add get/set methods for the different variables of the fluid
+
 // Structure FluidParticle
 /**
  * This structure represents particle of a fluid.
@@ -47,15 +49,58 @@ struct FluidParticle {
     /// Velocity of the particle
     Vector3 velocity;
 
+    /// True if the particle has not been simulated yet
+    bool isNotSimulatedYet;
+
+    // -------------------- Methods -------------------- //
+
+    /// Constructor
+    FluidParticle(const Vector3& initPosition, const Vector3& initVelocity)
+                 :position(initPosition), velocity(initVelocity), isNotSimulatedYet(true) {
+
+    }
+
 };
 
-// Class Fluid
+// Structure ParticleFluidInfo
+/**
+ * This structure is used to gather the information needed to create a particle fluid.
+ */
+struct ParticleFluidInfo {
+
+    /// Dimension of the fluid grid
+    Vector3 dimension;
+
+    /// Position of the center of the fluid grid
+    Vector3 position;
+
+    /// Construction
+    ParticleFluidInfo(const Vector3& initPosition, const Vector3& initDimension)
+                     : position(initPosition), dimension(initDimension) {
+
+    }
+};
+
+// Class ParticleFluid
 /**
  * This class represents a fluid made of several particles.
  */
-class Fluid {
+class ParticleFluid {
 
     private:
+        // -------------------- Attributes -------------------- //
+
+        /// Default particle mass (in kg)
+        const static decimal DEFAULT_PARTICLE_MASS;
+
+        /// Default fluid rest density in kg/m^3 (density of water)
+        const static decimal DEFAULT_FLUID_REST_DENSITY;
+
+        /// Default gas stiffness constant
+        const static decimal DEFAULT_GAS_STIFFNESS;
+
+        /// Default fluid viscosity coefficient
+        const static decimal DEFAULT_VISCOSITY;
 
         // -------------------- Attributes -------------------- //
 
@@ -77,21 +122,47 @@ class Fluid {
         std::vector<FluidParticle> mParticles;
 
         /// Mass of each particle in the fluid
-        // TODO : Initialize this value
         decimal mMassParticle;
+
+        /// Rest density of the fluid
+        decimal mRestDensity;
+
+        /// Gas stiffness constant
+        decimal mGasStiffness;
+
+        /// Fluid viscosity coefficient
+        decimal mViscosity;
+
+        /// True if the gravity needs to be applied to this fluid
+        bool mIsGravityEnabled;
+
+        /// Current external force acting on the fluid
+        Vector3 mExternalForce;
+
+        /// True if this fluid has not been simulated yet
+        bool mIsNotSimulatedYet;
 
     public:
 
         // -------------------- Methods -------------------- //
 
         /// Constructor
-        Fluid(Vector3 position, Vector3 dimension);
+        ParticleFluid(const ParticleFluidInfo& particleFluidInfo);
 
         /// Destructor
-        ~Fluid();
+        ~ParticleFluid();
 
         /// Return the number of particles in the fluid
         uint32 getNbParticles() const;
+
+        /// Create and add a new particle into the fluid
+        void createParticle(const Vector3& position, const Vector3& velocity);
+
+        /// Remove all the particles of the fluid
+        void removeAllParticles();
+
+        /// Return a given particle of the fluid
+        const FluidParticle& getParticle(uint index);
 
         // -------------------- Friendship -------------------- //
 
@@ -100,8 +171,14 @@ class Fluid {
 };
 
 // Return the number of particles in the fluid
-inline uint32 Fluid::getNbParticles() const {
+inline uint32 ParticleFluid::getNbParticles() const {
     return mNbParticles;
+}
+
+// Return a given particle of the fluid
+inline const FluidParticle& ParticleFluid::getParticle(uint index) {
+    assert(index >= 0 && index < mNbParticles);
+    return mParticles[index];
 }
 
 }
