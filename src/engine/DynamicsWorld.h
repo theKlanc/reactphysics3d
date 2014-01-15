@@ -62,9 +62,6 @@ class DynamicsWorld : public CollisionWorld {
         /// Constraint solver
         ConstraintSolver mConstraintSolver;
 
-        /// Fluid solver
-        FluidSolver mFluidSolver;
-
         /// Number of iterations for the velocity solver of the Sequential Impulses technique
         uint mNbVelocitySolverIterations;
 
@@ -115,6 +112,9 @@ class DynamicsWorld : public CollisionWorld {
 
         /// Map body to their index in the constrained velocities array
         std::map<RigidBody*, uint> mMapBodyToConstrainedVelocityIndex;
+
+        /// Fluid solver
+        FluidSolver mFluidSolver;
 
         /// Number of islands in the world
         uint mNbIslands;
