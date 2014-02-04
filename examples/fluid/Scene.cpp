@@ -25,21 +25,23 @@
 
 // Libraries
 #include "Scene.h"
+#include <cstdlib>
 
 // Namespaces
 using namespace openglframework;
 
 // Constructor
-Scene::Scene(Viewer* viewer) : mViewer(viewer), mLight0(0),
-                               mPhongShader("shaders/phong.vert",
-                                            "shaders/phong.frag"), mIsRunning(false) {
+Scene::Scene(Viewer* viewer, const std::string& shaderFolderPath,
+             const std::string& meshFolderPath) : mViewer(viewer), mLight0(0),
+                               mPhongShader(shaderFolderPath + "phong.vert",
+                                            shaderFolderPath + "phong.frag"), mIsRunning(false) {
 
     // Move the light 0
     mLight0.translateWorld(Vector3(7, 15, 15));
 
     // Compute the radius and the center of the scene
-    float radiusScene = 30.0f;
-    openglframework::Vector3 center(0, 5, 0);
+    float radiusScene = 1.5f;
+    openglframework::Vector3 center(0, 0, 0);
 
     // Set the center of the scene
     mViewer->setScenePosition(center, radiusScene);
@@ -48,7 +50,8 @@ Scene::Scene(Viewer* viewer) : mViewer(viewer), mLight0(0),
     rp3d::Vector3 gravity(0, rp3d::decimal(-9.81), 0);
 
     // Time step for the physics simulation
-    rp3d::decimal timeStep = 1.0f / 60.0f;
+    // TODO : Try different timesteps (check with 1/60 also)
+    rp3d::decimal timeStep = 1.0f / 150.0f;
 
     // Create the dynamics world for the physics simulation
     mDynamicsWorld = new rp3d::DynamicsWorld(gravity, timeStep);
@@ -71,7 +74,7 @@ Scene::Scene(Viewer* viewer) : mViewer(viewer), mLight0(0),
     material.setBounciness(rp3d::decimal(0.3));
 
     // Create the sphere used to render the particles
-    mSphere = new Sphere(PARTICLE_SPHERE_RADIUS);
+    mSphere = new Sphere(PARTICLE_SPHERE_RADIUS, meshFolderPath);
 
     // Start the simulation
     startSimulation();
@@ -81,8 +84,8 @@ Scene::Scene(Viewer* viewer) : mViewer(viewer), mLight0(0),
 void Scene::createFluid() {
 
     // Position and dimension of the fluid grid
-    const rp3d::Vector3 position(0, 1.0, 0);
-    const rp3d::Vector3 dimension(0.5, 2.0, 0.5);
+    const rp3d::Vector3 position(0, 0.0, 0);
+    const rp3d::Vector3 dimension(0.3, 0.3, 0.3);
 
     // Create the fluid info object
     rp3d::ParticleFluidInfo fluidInfo(position, dimension);
@@ -90,24 +93,38 @@ void Scene::createFluid() {
     // Create the fluid in the world
     mFluid = mDynamicsWorld->createParticleFluid(fluidInfo);
 
-    uint nbX = 10;
-    uint nbY = 10;
-    uint nbZ = 100;
-    float startDim = 0.3f;
-    for (uint i=0; i<nbX; i++) {
+    uint nbParticles = 600;
+    float startDim = 0.2f;
+    assert(startDim < dimension.x && startDim < dimension.y && startDim < dimension.z);
+    for (uint p=0; p<nbParticles; p++) {
+
+        uint i = rand() % 100 + 1;
+        uint j = rand() % 100 + 1;
+        uint k = rand() % 100 + 1;
+        const rp3d::Vector3 particlePosition(position.x - 0.5f * startDim + (float(i) / 100.0) * startDim,
+                                             position.y - 0.5f * startDim + (float(j) / 100.0) * startDim,
+                                             position.z - 0.5f * startDim + (float(k) / 100.0) * startDim);
+
+        // Create a new particle
+        mFluid->createParticle(particlePosition, rp3d::Vector3(0.0, 0.0, 0));
+    }
+
+    /*
+     * for (uint i=0; i<nbX; i++) {
         for (uint j=0; j<nbY; j++) {
              for (uint k=0; k<nbZ; k++) {
 
                  const rp3d::Vector3 particlePosition(position.x - 0.5f * startDim + i * (startDim / nbX),
-                                                position.y - 0.5f * startDim + i * (startDim / nbY),
-                                                position.z - 0.5f * startDim + i * (startDim / nbZ));
+                                                position.y - 0.5f * startDim + j * (startDim / nbY),
+                                                position.z - 0.5f * startDim + k * (startDim / nbZ));
 
                  // Create a new particle
-                 mFluid->createParticle(particlePosition, rp3d::Vector3(0, 0, 0));
+                 mFluid->createParticle(particlePosition, rp3d::Vector3(0.1, 0.2, 0));
 
              }
         }
     }
+    */
 }
 
 // Destructor
@@ -173,7 +190,8 @@ void Scene::render() {
     renderFluid(mPhongShader, worldToCameraMatrix);
 
     // Render the floor
-    mFloor->render(mPhongShader, worldToCameraMatrix);
+    // TODO : Uncomment this
+    //mFloor->render(mPhongShader, worldToCameraMatrix);
 
     // Unbind the shader
     mPhongShader.unbind();
@@ -187,7 +205,13 @@ void Scene::renderFluid(openglframework::Shader& shader,
     for (uint i=0; i<mFluid->getNbParticles(); i++) {
 
         const rp3d::FluidParticle& particle = mFluid->getParticle(i);
-        mSphere->setToIdentity();
+
+        // Translate it back to the origin
+        Matrix4 matrix = mSphere->getTransformMatrix();
+        matrix.m[0][3] = 0.0; matrix.m[1][3] = 0.0; matrix.m[2][3] = 0.0;
+        mSphere->setTransformMatrix(matrix);
+
+        // Translate the particle to its position
         mSphere->translateWorld(openglframework::Vector3(particle.position.x,
                                                          particle.position.y,
                                                          particle.position.z));

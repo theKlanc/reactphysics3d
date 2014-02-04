@@ -28,49 +28,5 @@
 
 using namespace reactphysics3d;
 
-// Function that sorts an array of integer using the radix sort algorithm.
-void reactphysics3d::radixSort(uint32 array[], uint32 nbElements) {
+// TODO : DELETE THIS FILE
 
-    // Find the maximum element in the array
-    uint32 maxElement = array[0];
-    for (uint32 i = 1; i < nbElements; i++) {
-        if (array[i] > maxElement) {
-            maxElement = array[i];
-        }
-    }
-
-    // Perform a counting sort pass for every digit
-    for (uint32 exp=1; (maxElement / exp) > 0; exp *= 10) {
-        countingSort(array, nbElements, exp);
-    }
-}
-
-// Function that sorts an array of integers according to the digit represented by "exp"
-void reactphysics3d::countingSort(uint32 array[], uint32 nbElements, uint32 exp) {
-    uint32* outputArray = new uint32[nbElements];
-    uint32 count[10] = {0};
-    int i;
-
-    // Compute the histogram of the digit occurences in count[]
-    for (i=0; i<nbElements; i++) {
-        count[(array[i]/exp) % 10]++;
-    }
-
-    // Change count[] so that it contains the actual position of the digits in the output array
-    for (i=1; i<10; i++) {
-        count[i] += count[i - 1];
-    }
-
-    // Fill-in the output array
-    for (i=nbElements-1; i >= 0; i--) {
-        outputArray[count[(array[i]/exp) % 10] - 1] = array[i];
-        count[(array[i]/exp) % 10]--;
-    }
-
-    // Copy the output array into the input array
-    for (i=0; i<nbElements; i++) {
-        array[i] = outputArray[i];
-    }
-
-    delete[] outputArray;
-}

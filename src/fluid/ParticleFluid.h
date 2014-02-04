@@ -28,6 +28,7 @@
 
 // Libraries
 #include "../mathematics/Vector3.h"
+#include "../common/radixsort.h"
 #include <vector>
 
 /// Namespace ReactPhysics3D
@@ -49,15 +50,28 @@ struct FluidParticle {
     /// Velocity of the particle
     Vector3 velocity;
 
+    /// Velocity of the particle (at a mid-velocity step) for evaluation
+    Vector3 velocityEvaluation;
+
     /// True if the particle has not been simulated yet
     bool isNotSimulatedYet;
+
+    /// Z-Index of the particle according its position in the 3D grid
+    uint32 zIndex;
 
     // -------------------- Methods -------------------- //
 
     /// Constructor
     FluidParticle(const Vector3& initPosition, const Vector3& initVelocity)
-                 :position(initPosition), velocity(initVelocity), isNotSimulatedYet(true) {
+                 :position(initPosition), velocity(initVelocity),
+                  velocityEvaluation(initVelocity), isNotSimulatedYet(true),
+                  zIndex(0) {
 
+    }
+
+    /// Return the key of the particle (z-index) for sorting
+    uint32 key() const {
+        return zIndex;
     }
 
 };

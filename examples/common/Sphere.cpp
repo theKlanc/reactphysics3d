@@ -45,6 +45,8 @@ Sphere::Sphere(float radius, const openglframework::Vector3 &position,
                                               0, 0, mRadius, 0,
                                               0, 0, 0, 1);
 
+    mTransformMatrix = mTransformMatrix * mScalingMatrix;
+
     // Initialize the position where the sphere will be rendered
     translateWorld(position);
 
@@ -63,10 +65,11 @@ Sphere::Sphere(float radius, const openglframework::Vector3 &position,
 }
 
 // Constructor
-Sphere::Sphere(float radius) : mRadius(radius), mRigidBody(NULL) {
+Sphere::Sphere(float radius, const std::string& meshFolderPath)
+       : mRadius(radius), mRigidBody(NULL) {
 
     // Load the mesh from a file
-    openglframework::MeshReaderWriter::loadMeshFromFile("meshes/sphere.obj", *this);
+    openglframework::MeshReaderWriter::loadMeshFromFile(meshFolderPath + "sphere.obj", *this);
 
     // Calculate the normals of the mesh
     calculateNormals();
@@ -76,6 +79,8 @@ Sphere::Sphere(float radius) : mRadius(radius), mRigidBody(NULL) {
                                               0, mRadius, 0, 0,
                                               0, 0, mRadius, 0,
                                               0, 0, 0, 1);
+
+    mTransformMatrix = mTransformMatrix * mScalingMatrix;
 }
 
 // Destructor

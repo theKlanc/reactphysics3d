@@ -28,12 +28,16 @@
 
 // Libraries
 #include "ParticleFluid.h"
+#include "../engine/Profiler.h"
 #include "../configuration.h"
 #include <set>
 #include <map>
 #include <cassert>
 
 // TODO : Make possible to use non-cubic fluid area (now grid only allows same x,y,z dimensions)
+
+// TODO : Try to add a upper bound in the number of particles taken into account as a neighbor
+//        in each neighboring block to speed-up the simulation if clustering occurs.
 
 /// Namespace ReactPhysics3D
 namespace reactphysics3d {
@@ -81,7 +85,7 @@ class FluidSolver {
         static const uint GRID_DIMENSION;
 
         /// Number of cells in the side of a block (matching the size of the support radius)
-        static const uint BLOCk_NB_CELLS;
+        static const uint BLOCK_NB_CELLS;
 
         /// Mass of a particle in the fluid (in kg)
         static const decimal PARTICLE_MASS;
@@ -95,16 +99,16 @@ class FluidSolver {
         // -------------------- Attributes -------------------- //
 
         /// Reference to the set of all fluids of the world
-        std::set<ParticleFluid*> mFluids;
+        std::set<ParticleFluid*>& mFluids;
 
-        /// Map the z-index of a particle with its index in the fluid
-        std::map<uint32, uint32> mMapZIndexToParticleIndex;
-
-        /// Array with the sorted z-index of the particles
-        uint32* mSortedZIndexParticles;
+        /// Array with the sorted particles (according to their z-index)
+        std::vector<FluidParticle*> mSortedZIndexParticles;
 
         /// Array with the densities at particles locations
         decimal* mDensities;
+
+        /// Array with the forces on the particles
+        Vector3* mForces;
 
         /// Array with the blocks of particles
         BlockParticles* mBlockParticles;
@@ -137,8 +141,14 @@ class FluidSolver {
         /// Compute the density at the particles locations
         void computeDensity(ParticleFluid* fluid);
 
-        /// Compute the forces on the particles and update their positions
-        void computeForcesAndUpdatePosition(ParticleFluid* fluid);
+        /// Initialize the velocity of particles
+        void initParticlesVelocity(ParticleFluid* fluid);
+
+        /// Compute the forces on the particles
+        void computeForcesOnParticles(ParticleFluid* fluid);
+
+        /// Update the particles positions and velocities
+        void updateParticlesPosition(ParticleFluid* fluid);
 
         /// Smoothing kernel Poly6 for the SPH simulation
         decimal kernelPoly6(decimal distanceSquare);
@@ -189,6 +199,7 @@ inline uint32 FluidSolver::expandBits(uint32 x) const {
 
 // Smoothing kernel Poly6 for the SPH simulation
 inline decimal FluidSolver::kernelPoly6(decimal distanceSquare) {
+    PROFILE("FluidSolver::kernelPoly6()");
     const decimal value = SPH_SUPPORT_RADIUS_SQUARE - distanceSquare;
     assert(value >= decimal(0.0));
     return POLY6_FACTOR * value * value * value;
@@ -196,6 +207,7 @@ inline decimal FluidSolver::kernelPoly6(decimal distanceSquare) {
 
 // Gradient of the Spiky kernel
 inline Vector3 FluidSolver::gradientKernelSpiky(const Vector3& r, decimal distance) {
+    PROFILE("FluidSolver::gradientKernelSpiky()");
     const decimal value = SPH_SUPPORT_RADIUS - distance;
     assert(value >= decimal(0.0));
     if (distance < MACHINE_EPSILON) return Vector3(0, 0, 0);
@@ -204,6 +216,7 @@ inline Vector3 FluidSolver::gradientKernelSpiky(const Vector3& r, decimal distan
 
 // Laplacian of the viscosity kernel
 inline decimal FluidSolver::laplacianKernelViscosity(decimal distance) {
+    PROFILE("FluidSolver::laplacianKernelViscosity()");
     assert(SPH_SUPPORT_RADIUS - distance >= decimal(0.0));
     return SPIKY_FACTOR * (SPH_SUPPORT_RADIUS - distance);
 }
