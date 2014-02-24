@@ -27,6 +27,7 @@
 #include "FluidSolver.h"
 #include "../common/radixsort.h"
 #include <cmath>
+#include <algorithm>
 
 
 // TODO : Add assert() verification in the code
@@ -36,8 +37,7 @@ using namespace reactphysics3d;
 // Initialization of static variables
 const decimal FluidSolver::SPH_SUPPORT_RADIUS = decimal(0.02);
 const decimal FluidSolver::SPH_SUPPORT_RADIUS_SQUARE = SPH_SUPPORT_RADIUS * SPH_SUPPORT_RADIUS;
-const uint FluidSolver::GRID_DIMENSION = 16;
-const decimal FluidSolver::PARTICLE_MASS = decimal(0.02);
+const uint FluidSolver::GRID_DIMENSION = 32;
 const uint FluidSolver::BLOCK_NB_CELLS = 2;
 const decimal FluidSolver::POLY6_FACTOR = decimal(315.0) /
                                           decimal(64.0 * PI * pow(SPH_SUPPORT_RADIUS, 9));
@@ -118,6 +118,7 @@ void FluidSolver::computeZIndexAndSortParticles(ParticleFluid* fluid) {
     assert(mSortedZIndexParticles.empty());
 
     const Vector3 startGrid = fluid->mPosition - decimal(0.5) * fluid->mDimension;
+    // TODO : Change this when using non-cubic grid
     const decimal cellSize = fluid->mDimension.x / decimal(GRID_DIMENSION);
 
     // For each particle of the fluid
@@ -127,9 +128,9 @@ void FluidSolver::computeZIndexAndSortParticles(ParticleFluid* fluid) {
         FluidParticle* particle = &fluid->mParticles[i];
 
         // Compute its (x,y,z) grid coordinate
-        uint32 x = static_cast<uint32>((fluid->mParticles[i].position.x - startGrid.x) / cellSize);
-        uint32 y = static_cast<uint32>((fluid->mParticles[i].position.y - startGrid.y) / cellSize);
-        uint32 z = static_cast<uint32>((fluid->mParticles[i].position.z - startGrid.z) / cellSize);
+        uint32 x = static_cast<uint32>((particle->position.x - startGrid.x) / cellSize);
+        uint32 y = static_cast<uint32>((particle->position.y - startGrid.y) / cellSize);
+        uint32 z = static_cast<uint32>((particle->position.z - startGrid.z) / cellSize);
 
         // Compute the corresponding z-index coordinate
         particle->zIndex = computeZIndex(x, y, z);
@@ -152,16 +153,25 @@ void FluidSolver::computeBlocks(ParticleFluid* fluid) {
     const Vector3 startGrid = fluid->mPosition - decimal(0.5) * fluid->mDimension;
 
     // For each particles of the sorted z-index array
-    for (uint i=0; i<fluid->getNbParticles(); i++) {
+    for (uint i=0; i<fluid->mNbParticles; i++) {
 
         // Get the particle
         const FluidParticle* particle = mSortedZIndexParticles[i];
 
         // Compute its (x,y,z) grid coordinate
         // TODO : Maybe we can store this in the particle at the previous step
-        uint32 x = static_cast<uint32>((particle->position.x - startGrid.x) / cellSize);
-        uint32 y = static_cast<uint32>((particle->position.y - startGrid.y) / cellSize);
-        uint32 z = static_cast<uint32>((particle->position.z - startGrid.z) / cellSize);
+        int x = static_cast<int>((particle->position.x - startGrid.x) / cellSize);
+        int y = static_cast<int>((particle->position.y - startGrid.y) / cellSize);
+        int z = static_cast<int>((particle->position.z - startGrid.z) / cellSize);
+        assert(x >= -1 && x <= GRID_DIMENSION);
+        assert(y >= -1 && y <= GRID_DIMENSION);
+        assert(z >= -1 && z <= GRID_DIMENSION);
+
+        // Clamp to the range [0; GRID_DIMENSION] in case of
+        // precision error
+        x = std::min(std::max(0, x), int(GRID_DIMENSION) - 1);
+        y = std::min(std::max(0, y), int(GRID_DIMENSION) - 1);
+        z = std::min(std::max(0, z), int(GRID_DIMENSION) - 1);
 
         // Compute the (x,y,z) block coordinates
         uint32 xBlock = x / BLOCK_NB_CELLS;
@@ -170,6 +180,7 @@ void FluidSolver::computeBlocks(ParticleFluid* fluid) {
 
         // Compute the index of the block in the blocks array
         uint32 indexBlock = zBlock * (nbBlocks * nbBlocks) + yBlock * nbBlocks + xBlock;
+        assert(indexBlock >= 0 && indexBlock < mNbBlocks);
 
         // Compute the starting z-index of the block
         if (i < mBlockParticles[indexBlock].firstParticle) {
@@ -199,25 +210,34 @@ void FluidSolver::computeDensity(ParticleFluid* fluid) {
     uint nbParticles = 0;
     uint nbLoop = 0;
 
+    // TODO : Delete this
+    decimal blockDistance = fluid->mDimension.x / decimal(nbBlocks);
+    //std::cout << "Block Distance : " << blockDistance << std::endl;
+
     // For each block
     for (uint32 i=0; i<mNbBlocks; i++) {
-
-        PROFILE("FluidSolver::computeDensity()::ForEachBlock");
 
         // Compute the (x,y,z) block coordinates
         const int xBlock = (i % nbBlocksSquare) % nbBlocks;
         const int yBlock = (i % nbBlocksSquare) / nbBlocks;
         const int zBlock = i / nbBlocksSquare;
+        assert(xBlock >= 0 && xBlock < nbBlocks);
+        assert(yBlock >= 0 && yBlock < nbBlocks);
+        assert(zBlock >= 0 && zBlock < nbBlocks);
+
+        //std::cout << "Test_Block=" << i << " First particle=" << mBlockParticles[i].firstParticle << std::endl;
+        assert(mBlockParticles[i].nbParticles < fluid->mNbParticles);
+        assert(mBlockParticles[i].nbParticles == 0 || mBlockParticles[i].firstParticle < fluid->mNbParticles);
 
         //std::cout << "_Block " << i << " with " << mBlockParticles[i].nbParticles << " particles" << std::endl;
 
         // For each particle of the block
         for (uint32 p=0; p<mBlockParticles[i].nbParticles; p++) {
 
-            PROFILE("FluidSolver::computeDensity()::ForEachParticleOfBlock");
-
             const uint32 indexParticle = mBlockParticles[i].firstParticle + p;
             const FluidParticle* particle = mSortedZIndexParticles[indexParticle];
+
+            //std::cout << "Block (" << xBlock << ", " << yBlock << ", " << zBlock << ")" << std::endl;
 
             //std::cout << "___Particle" << indexParticle << std::endl;
 
@@ -227,27 +247,25 @@ void FluidSolver::computeDensity(ParticleFluid* fluid) {
             // For each of the 27 neighboring block
             for (int b=0; b<27; b++) {
 
-                PROFILE("FluidSolver::computeDensity()::ForEachNeighboringBlock");
-
                 // Compute the (x,y,z) coordinates of the neighbor block
-                const int xDiff = ((b % 9) % 3) - 2 + xBlock;
-                const int yDiff = ((b % 9) / 3) - 2 + yBlock;
-                const int zDiff = (b / 9) - 2 + zBlock;
-
-                // If the neighboring block is out of the grid
-                if (xDiff < 0 || xDiff > nbBlocks ||
-                    yDiff < 0 || yDiff > nbBlocks ||
-                    zDiff < 0 || zDiff > nbBlocks) continue;
+                const int xDiff = ((b % 9) % 3) - 1 + xBlock;
+                assert(xDiff <= xBlock + 1 && xDiff >= xBlock - 1);
+                if (xDiff < 0 || xDiff >= nbBlocks) continue;
+                const int yDiff = ((b % 9) / 3) - 1 + yBlock;
+                assert(yDiff <= yBlock + 1 && yDiff >= yBlock - 1);
+                if (yDiff < 0 || yDiff >= nbBlocks) continue;
+                const int zDiff = (b / 9) - 1 + zBlock;
+                assert(zDiff <= zBlock + 1 && zDiff >= zBlock - 1);
+                if (zDiff < 0 || zDiff >= nbBlocks) continue;
 
                 uint32 indexBlock = zDiff * nbBlocksSquare + yDiff * nbBlocks + xDiff;
+                assert(indexBlock >= 0 && indexBlock < mNbBlocks);
 
                 //std::cout << "______Neighbor block " << b << " with " << mBlockParticles[indexBlock].nbParticles << " particles" << std::endl;
 
                 // For each particle of the neighboring block
                 for (uint32 q=0; q < mBlockParticles[indexBlock].nbParticles; q++) {
                     nbLoop++;
-
-                    PROFILE("FluidSolver::computeDensity()::ForEachParticleinNeighboringBlock");
 
                     uint32 indexNeighbor = mBlockParticles[indexBlock].firstParticle + q;
                     const FluidParticle* neighbor = mSortedZIndexParticles[indexNeighbor];
@@ -326,39 +344,52 @@ void FluidSolver::computeForcesOnParticles(ParticleFluid* fluid) {
         const int xBlock = (i % nbBlocksSquare) % nbBlocks;
         const int yBlock = (i % nbBlocksSquare) / nbBlocks;
         const int zBlock = i / nbBlocksSquare;
+        assert(xBlock >= 0 && xBlock < nbBlocks);
+        assert(yBlock >= 0 && yBlock < nbBlocks);
+        assert(zBlock >= 0 && zBlock < nbBlocks);
 
         // For each particle of the block
         for (uint32 p=0; p<mBlockParticles[i].nbParticles; p++) {
 
             const uint32 indexParticle = mBlockParticles[i].firstParticle + p;
             FluidParticle* particle = mSortedZIndexParticles[indexParticle];
+            decimal testDensity = mDensities[indexParticle];    // TODO : DELETE THIS
 
             // Compute the pression at the current particle position
             decimal pressionParticle = fluid->mGasStiffness *
                                        (mDensities[indexParticle] - fluid->mRestDensity);
 
             Vector3 sumForce(0, 0, 0);
+            uint nbNeighbors = 0;       // TODO : DELETE THIS
 
             // For each of the 27 neighboring block
             for (int b=0; b<27; b++) {
 
                 // Compute the (x,y,z) coordinates of the neighbor block
-                const int xDiff = ((b % 9) % 3) - 2 + xBlock;
-                const int yDiff = ((b % 9) / 3) - 2 + yBlock;
-                const int zDiff = (b / 9) - 2 + zBlock;
+                const int xDiff = ((b % 9) % 3) - 1 + xBlock;
+                assert(xDiff <= xBlock + 1 && xDiff >= xBlock - 1);
+                if (xDiff < 0 || xDiff >= nbBlocks) continue;
+                const int yDiff = ((b % 9) / 3) - 1 + yBlock;
+                assert(yDiff <= yBlock + 1 && yDiff >= yBlock - 1);
+                if (yDiff < 0 || yDiff >= nbBlocks) continue;
+                const int zDiff = (b / 9) - 1 + zBlock;
+                assert(zDiff <= zBlock + 1 && zDiff >= zBlock - 1);
+                if (zDiff < 0 || zDiff >= nbBlocks) continue;
 
                 // If the neighboring block is out of the grid
-                if (xDiff < 0 || xDiff > nbBlocks ||
-                    yDiff < 0 || yDiff > nbBlocks ||
-                    zDiff < 0 || zDiff > nbBlocks) continue;
+                if (xDiff < 0 || xDiff >= nbBlocks ||
+                    yDiff < 0 || yDiff >= nbBlocks ||
+                    zDiff < 0 || zDiff >= nbBlocks) continue;
 
                 uint32 indexBlock = zDiff * nbBlocksSquare + yDiff * nbBlocks + xDiff;
+                assert(indexBlock >= 0 && indexBlock < mNbBlocks);
 
                 // For each particle of the neighboring block
                 for (uint32 q=0; q < mBlockParticles[indexBlock].nbParticles; q++) {
-
+                    uint32 first = mBlockParticles[indexBlock].firstParticle; // TODO : DELETE THIS
                     uint32 indexNeighbor = mBlockParticles[indexBlock].firstParticle + q;
                     const FluidParticle* neighbor = mSortedZIndexParticles[indexNeighbor];
+                    decimal testDensityNeighbor = mDensities[indexNeighbor];    // TODO : DELETE THIS
 
                     // Compute the square distance from particle to its neighbor
                     const Vector3 r = particle->position - neighbor->position;
@@ -366,6 +397,8 @@ void FluidSolver::computeForcesOnParticles(ParticleFluid* fluid) {
 
                     // If the neighbor is not inside the SPH support radius, we go to the next one
                     if (distSquare > SPH_SUPPORT_RADIUS_SQUARE) continue;
+
+                    nbNeighbors++;
 
                     // Compute the distance between the particle and its neighbor
                     decimal distance = std::sqrt(distSquare);
@@ -386,6 +419,8 @@ void FluidSolver::computeForcesOnParticles(ParticleFluid* fluid) {
                     sumForce += (pressionForce + fluid->mViscosity * viscosityForce) / mDensities[indexNeighbor];
                 }
             }
+
+            //std::cout << "Nb neighbors : " << nbNeighbors << std::endl;
 
             // Compute the total force on the particle
             mForces[indexParticle] = fluid->mMassParticle * SPIKY_FACTOR * sumForce;
@@ -430,7 +465,7 @@ void FluidSolver::updateParticlesPosition(ParticleFluid* fluid) {
             particle->velocity += acceleration * mTimestep;
 
             // Compute the velocity used for evaluation at velocity mid-step
-            particle->velocityEvaluation += decimal(0.5) * (oldVelocity + particle->velocity);
+            particle->velocityEvaluation = decimal(0.5) * (oldVelocity + particle->velocity);
 
             // Integrate the position of the particle using Leap-Frog integration
             particle->position += particle->velocity * mTimestep;
@@ -473,7 +508,7 @@ void FluidSolver::computeCollisionDetection(ParticleFluid* fluid) {
         Vector3 normal = (depth > MACHINE_EPSILON) ? diff.getUnit() : -particle.velocityEvaluation.getUnit();
 
         // Collision response
-        decimal restitution = decimal(0.01);
+        decimal restitution = decimal(0.3);
         particle.position += (depth + 0.001) * normal;
         particle.velocity -= (decimal(1.0) + restitution * depth / (mTimestep * particle.velocityEvaluation.length())) *
                              (particle.velocityEvaluation.dot(normal)) * normal;

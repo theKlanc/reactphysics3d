@@ -40,7 +40,7 @@ Scene::Scene(Viewer* viewer, const std::string& shaderFolderPath,
     mLight0.translateWorld(Vector3(7, 15, 15));
 
     // Compute the radius and the center of the scene
-    float radiusScene = 1.5f;
+    float radiusScene = 0.8f;
     openglframework::Vector3 center(0, 0, 0);
 
     // Set the center of the scene
@@ -51,7 +51,7 @@ Scene::Scene(Viewer* viewer, const std::string& shaderFolderPath,
 
     // Time step for the physics simulation
     // TODO : Try different timesteps (check with 1/60 also)
-    rp3d::decimal timeStep = 1.0f / 150.0f;
+    rp3d::decimal timeStep = 1.0f / 350.0f;
 
     // Create the dynamics world for the physics simulation
     mDynamicsWorld = new rp3d::DynamicsWorld(gravity, timeStep);
@@ -85,7 +85,7 @@ void Scene::createFluid() {
 
     // Position and dimension of the fluid grid
     const rp3d::Vector3 position(0, 0.0, 0);
-    const rp3d::Vector3 dimension(0.3, 0.3, 0.3);
+    const rp3d::Vector3 dimension(0.24, 0.24, 0.24);
 
     // Create the fluid info object
     rp3d::ParticleFluidInfo fluidInfo(position, dimension);
@@ -93,38 +93,40 @@ void Scene::createFluid() {
     // Create the fluid in the world
     mFluid = mDynamicsWorld->createParticleFluid(fluidInfo);
 
-    uint nbParticles = 600;
-    float startDim = 0.2f;
+    uint nbParticles = 700;
+    float startDim = dimension.x * 0.5f;
+    float vertDim = dimension.y * 0.5f;
     assert(startDim < dimension.x && startDim < dimension.y && startDim < dimension.z);
+    /*
     for (uint p=0; p<nbParticles; p++) {
 
         uint i = rand() % 100 + 1;
         uint j = rand() % 100 + 1;
         uint k = rand() % 100 + 1;
         const rp3d::Vector3 particlePosition(position.x - 0.5f * startDim + (float(i) / 100.0) * startDim,
-                                             position.y - 0.5f * startDim + (float(j) / 100.0) * startDim,
+                                             position.y - 0.5f * vertDim + (float(j) / 100.0) * vertDim,
                                              position.z - 0.5f * startDim + (float(k) / 100.0) * startDim);
 
         // Create a new particle
         mFluid->createParticle(particlePosition, rp3d::Vector3(0.0, 0.0, 0));
     }
+    */
+    float epsilon = 0.0001f;
+    int nbParts1D = (int) std::pow(float(nbParticles), 1.0f / 3.0f);
+    for (uint i=0; i<nbParts1D; i++) {
+        for (uint j=0; j<nbParts1D; j++) {
+             for (uint k=0; k<nbParts1D; k++) {
 
-    /*
-     * for (uint i=0; i<nbX; i++) {
-        for (uint j=0; j<nbY; j++) {
-             for (uint k=0; k<nbZ; k++) {
-
-                 const rp3d::Vector3 particlePosition(position.x - 0.5f * startDim + i * (startDim / nbX),
-                                                position.y - 0.5f * startDim + j * (startDim / nbY),
-                                                position.z - 0.5f * startDim + k * (startDim / nbZ));
+                 const rp3d::Vector3 particlePosition(position.x - 0.5f * dimension.x + epsilon + i * 0.5f * (dimension.x / nbParts1D),
+                                                position.y - 0.5f * dimension.y + epsilon + j * 0.5f * (dimension.y / nbParts1D),
+                                                position.z - 0.5f * dimension.z + epsilon + k * 0.5f * (dimension.z / nbParts1D));
 
                  // Create a new particle
-                 mFluid->createParticle(particlePosition, rp3d::Vector3(0.1, 0.2, 0));
+                 mFluid->createParticle(particlePosition, rp3d::Vector3(0.0, 0.0, 0.0));
 
              }
         }
     }
-    */
 }
 
 // Destructor

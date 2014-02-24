@@ -34,7 +34,7 @@
 #include "Viewer.h"
 
 // Constants
-const float PARTICLE_SPHERE_RADIUS = 0.01;                 // Particle sphere radius
+const float PARTICLE_SPHERE_RADIUS = 0.005;                 // Particle sphere radius
 const openglframework::Vector3 FLOOR_SIZE(50, 0.5f, 50);   // Floor dimensions in meters
 const float FLOOR_MASS = 100.0f;                           // Floor mass in kilograms
 

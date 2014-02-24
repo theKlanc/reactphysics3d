@@ -55,9 +55,8 @@ struct BlockParticles {
     uint32 nbParticles;
 
     // Constructor
-    BlockParticles() {
-        firstParticle = std::numeric_limits<uint32>::max();
-        nbParticles = 0;
+    BlockParticles() : firstParticle(std::numeric_limits<uint32>::max()), nbParticles(0) {
+
     }
 
 };
@@ -86,9 +85,6 @@ class FluidSolver {
 
         /// Number of cells in the side of a block (matching the size of the support radius)
         static const uint BLOCK_NB_CELLS;
-
-        /// Mass of a particle in the fluid (in kg)
-        static const decimal PARTICLE_MASS;
 
         /// Factor for the Poly6 smoothing kernel
         static const decimal POLY6_FACTOR;

@@ -30,9 +30,9 @@
 
 using namespace reactphysics3d;
 
-/// Initialization of static variables
+// Initialization of static variables
 const decimal ParticleFluid::DEFAULT_PARTICLE_MASS = decimal(0.0002);
-const decimal ParticleFluid::DEFAULT_FLUID_REST_DENSITY = decimal(600.0);
+const decimal ParticleFluid::DEFAULT_FLUID_REST_DENSITY = decimal(1);
 const decimal ParticleFluid::DEFAULT_GAS_STIFFNESS = decimal(0.5);
 const decimal ParticleFluid::DEFAULT_VISCOSITY = decimal(0.2);
 
