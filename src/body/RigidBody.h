@@ -115,6 +115,12 @@ class RigidBody : public CollisionBody {
         /// True if the inertia tensor is set by the user
         bool mIsInertiaTensorSetByUser;
 
+		/// Angular velocity factor
+		Vector3 mAngularVelocityFactor;
+
+		/// Linear velocity factor
+		Vector3 mLinearVelocityFactor;
+
         // -------------------- Methods -------------------- //
 
         /// Remove a joint from the joints list
@@ -154,17 +160,29 @@ class RigidBody : public CollisionBody {
         /// Return the mass of the body
         decimal getMass() const;
 
-        /// Return the linear velocity
+		/// Return the linear velocity
         Vector3 getLinearVelocity() const;
 
-        /// Set the linear velocity of the body.
+		/// Return the linear velocity factor
+        Vector3 getLinearVelocityFactor() const;
+
+		/// Set the linear velocity of the body.
         void setLinearVelocity(const Vector3& linearVelocity);
 
-        /// Return the angular velocity
+		/// Set the linear velocity factor of the body.
+        void setLinearVelocityFactor(const Vector3& linearVelocityFactor);
+
+		/// Return the angular velocity
         Vector3 getAngularVelocity() const;
 
-        /// Set the angular velocity.
+		/// Return the angular velocity factor
+        Vector3 getAngularVelocityFactor() const;
+
+		/// Set the angular velocity.
         void setAngularVelocity(const Vector3& angularVelocity);
+
+		/// Set the angular velocity factor.
+        void setAngularVelocityFactor(const Vector3& angularVelocityFactor);
 
         /// Set the variable to know whether or not the body is sleeping
         virtual void setIsSleeping(bool isSleeping) override;
@@ -271,12 +289,28 @@ inline Vector3 RigidBody::getLinearVelocity() const {
     return mLinearVelocity;
 }
 
+// Return the linear velocity factor
+/**
+ * @return The linear velocity factors of the body
+ */
+inline Vector3 RigidBody::getLinearVelocityFactor() const {
+    return mLinearVelocityFactor;
+}
+
 // Return the angular velocity of the body
 /**
  * @return The angular velocity vector of the body
  */
 inline Vector3 RigidBody::getAngularVelocity() const {
     return mAngularVelocity;
+}
+
+// Return the angular velocity factor of the body
+/**
+ * @return The angular velocity factors of the body
+ */
+inline Vector3 RigidBody::getAngularVelocityFactor() const {
+    return mAngularVelocityFactor;
 }
 
 // Get the inverse local inertia tensor of the body (in body coordinates)

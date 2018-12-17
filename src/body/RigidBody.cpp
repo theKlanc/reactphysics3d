@@ -43,7 +43,8 @@ RigidBody::RigidBody(const Transform& transform, CollisionWorld& world, bodyinde
           : CollisionBody(transform, world, id), mArrayIndex(0), mInitMass(decimal(1.0)),
             mCenterOfMassLocal(0, 0, 0), mCenterOfMassWorld(transform.getPosition()),
             mIsGravityEnabled(true), mMaterial(world.mConfig), mLinearDamping(decimal(0.0)), mAngularDamping(decimal(0.0)),
-            mJointsList(nullptr), mIsCenterOfMassSetByUser(false), mIsInertiaTensorSetByUser(false) {
+            mJointsList(nullptr), mIsCenterOfMassSetByUser(false), mIsInertiaTensorSetByUser(false),
+			mAngularVelocityFactor(decimal(1.0), decimal(1.0), decimal(1.0)), mLinearVelocityFactor(decimal(1.0), decimal(1.0), decimal(1.0)) {
 
     // Compute the inverse mass
     mMassInverse = decimal(1.0) / mInitMass;
@@ -405,6 +406,27 @@ void RigidBody::setLinearVelocity(const Vector3& linearVelocity) {
              "Body " + std::to_string(mID) + ": Set linearVelocity=" + mLinearVelocity.to_string());
 }
 
+// Set the linear velocity factors of the rigid body.
+/**
+ * @param linearVelocityFactor Linear velocity factors of the body
+ */
+void RigidBody::setLinearVelocityFactor(const Vector3& linearVelocityFactor) {
+
+    // If it is a static body, we do nothing
+    if (mType == BodyType::STATIC) return;
+
+    // Update the linear velocity of the current body state
+    mLinearVelocityFactor = linearVelocityFactor;
+
+    // If the linear velocity is not zero, awake the body
+    if (mLinearVelocity.lengthSquare() > decimal(0.0)) {
+        setIsSleeping(false);
+    }
+
+    RP3D_LOG(mLogger, Logger::Level::Information, Logger::Category::Body,
+             "Body " + std::to_string(mID) + ": Set linearVelocityFactor=" + mLinearVelocity.to_string());
+}
+
 // Set the angular velocity.
 /**
 * @param angularVelocity The angular velocity vector of the body
@@ -424,6 +446,27 @@ void RigidBody::setAngularVelocity(const Vector3& angularVelocity) {
 
     RP3D_LOG(mLogger, Logger::Level::Information, Logger::Category::Body,
              "Body " + std::to_string(mID) + ": Set angularVelocity=" + mAngularVelocity.to_string());
+}
+
+// Set the angular velocity factors.
+/**
+* @param angularVelocity The angular velocity factors of the body
+*/
+void RigidBody::setAngularVelocityFactor(const Vector3& angularVelocityFactor) {
+
+    // If it is a static body, we do nothing
+    if (mType == BodyType::STATIC) return;
+
+    // Set the angular velocity
+    mAngularVelocityFactor = angularVelocityFactor;
+
+    // If the velocity is not zero, awake the body
+    if (mAngularVelocity.lengthSquare() > decimal(0.0)) {
+        setIsSleeping(false);
+    }
+
+    RP3D_LOG(mLogger, Logger::Level::Information, Logger::Category::Body,
+             "Body " + std::to_string(mID) + ": Set angularVelocityFactor=" + mAngularVelocity.to_string());
 }
 
 // Set the current position and orientation

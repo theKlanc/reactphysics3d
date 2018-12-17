@@ -161,7 +161,7 @@ void DynamicsWorld::update(decimal timeStep) {
 void DynamicsWorld::integrateRigidBodiesPositions() {
 
     RP3D_PROFILE("DynamicsWorld::integrateRigidBodiesPositions()", mProfiler);
-    
+
     // For each island of the world
     for (uint i=0; i < mNbIslands; i++) {
 
@@ -182,6 +182,12 @@ void DynamicsWorld::integrateRigidBodiesPositions() {
                 newLinVelocity += mSplitLinearVelocities[indexArray];
                 newAngVelocity += mSplitAngularVelocities[indexArray];
             }
+
+			// Multiply by velocity factors
+			for(uint j=0; j<3; j++){
+				newLinVelocity[j] *= bodies[b]->getLinearVelocityFactor()[j];
+				newAngVelocity[j] *= bodies[b]->getAngularVelocityFactor()[j];
+			}
 
             // Get current position and orientation of the body
             const Vector3& currentPosition = bodies[b]->mCenterOfMassWorld;
@@ -331,6 +337,12 @@ void DynamicsWorld::integrateRigidBodiesVelocities() {
             decimal angularDamping = pow(decimal(1.0) - angDampingFactor, mTimeStep);
             mConstrainedLinearVelocities[indexBody] *= linearDamping;
             mConstrainedAngularVelocities[indexBody] *= angularDamping;
+
+			// Multiply by velocity factors
+			for(uint j=0; j<3; j++){
+				mConstrainedLinearVelocities[indexBody][j] *= bodies[b]->getLinearVelocityFactor()[j];
+				mConstrainedAngularVelocities[indexBody][j] *= bodies[b]->getAngularVelocityFactor()[j];
+			}
 
             indexBody++;
         }
