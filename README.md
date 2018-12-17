@@ -5,9 +5,9 @@ Adds rotation/movement restrictions, with new functions `RigidBody::setLinearVel
 This feature/behavior is untested, but its solved some problems for me in my own projects, particularly with RigidBodies falling through Heightmap collision shapes.
 
 After further playing around with the effects, I have the following conclusions.
-	- Locking all angular velocity (`setAngularVelocityFactor(rp3d::Vector3::zero());`) works great.
-	- Locking any combination of linear velocity works very well -  `setAngularVelocityFactor(rp3d::Vector3(1,1,0));` for instance, makes bodies behave like they're locked on rails.
-	- Locking the 'pitch' xor 'roll' axes of angular velocity leads to weird problems. It will lock rotation about one axis, but the axis is static, so things just rotate in a way that looks stupid.
+ - Locking all angular velocity (`setAngularVelocityFactor(rp3d::Vector3::zero());`) works great.
+ - Locking any combination of linear velocity works very well -  `setAngularVelocityFactor(rp3d::Vector3(1,1,0));` for instance, makes bodies behave like they're locked on rails.
+ - Locking the 'pitch' xor 'roll' axes of angular velocity leads to weird problems. It will lock rotation about one axis, but the axis is static, so things just rotate in a way that looks stupid.
 
 The patchfile of the changes is also available [here](https://gist.githubusercontent.com/saucecode/e42a28ece6146aa08091fedcde0ddf18/raw/ddb06d31bf9c47c2215b989b9172aebdacaa263d/velocity-constraints.patch) for your convenience. The remainder of this README is unchanged.
 
