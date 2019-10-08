@@ -307,7 +307,7 @@ ProxyShape* RigidBody::addCollisionShape(CollisionShape* collisionShape,
 
     // Recompute the center of mass, total mass and inertia tensor of the body with the new
     // collision shape
-    recomputeMassInformation();
+    //recomputeMassInformation();
 
     RP3D_LOG(mLogger, Logger::Level::Information, Logger::Category::Body,
              "Body " + std::to_string(mID) + ": Proxy shape " + std::to_string(proxyShape->getBroadPhaseId()) + " added to body");
@@ -333,7 +333,7 @@ void RigidBody::removeCollisionShape(const ProxyShape* proxyShape) {
     CollisionBody::removeCollisionShape(proxyShape);
 
     // Recompute the total mass, center of mass and inertia tensor
-    recomputeMassInformation();
+    //recomputeMassInformation();
 }
 
 // Set the variable to know if the gravity is applied to this rigid body
