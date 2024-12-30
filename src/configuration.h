@@ -33,6 +33,7 @@
 #include <sstream>
 #include <string>
 #include "decimal.h"
+#include <cstdint>
 #include "containers/Pair.h"
 
 // Windows platform
