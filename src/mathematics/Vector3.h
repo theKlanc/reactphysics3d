@@ -30,7 +30,7 @@
 #include <cassert>
 #include "mathematics_functions.h"
 #include "decimal.h"
-
+#include "glm/glm.hpp"
 
 /// ReactPhysics3D namespace
 namespace reactphysics3d {
@@ -157,6 +157,9 @@ struct Vector3 {
 
         /// Return the zero vector
         static Vector3 zero();
+
+        operator glm::vec3() const;
+
 
         // -------------------- Friends -------------------- //
 
@@ -401,6 +404,10 @@ inline std::string Vector3::to_string() const {
 // Return the zero vector
 inline Vector3 Vector3::zero() {
     return Vector3(0, 0, 0);
+}
+
+inline Vector3::operator glm::vec3() const{
+    return glm::vec3(x,y,z);
 }
 
 }
