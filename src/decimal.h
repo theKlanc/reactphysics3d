@@ -28,7 +28,7 @@
 
 /// ReactPhysiscs3D namespace
 namespace reactphysics3d {
-
+#define IS_DOUBLE_PRECISION_ENABLED 1
 #if defined(IS_DOUBLE_PRECISION_ENABLED)   // If we are compiling for double precision
     using decimal = double;
 #else                                   // If we are compiling for single precision
